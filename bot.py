@@ -1,8 +1,10 @@
 import asyncio
+import datetime
 import io
 import logging
 import re
 import zipfile
+from datetime import datetime, timedelta
 from os import getenv
 
 import garth
@@ -16,6 +18,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BufferedInputFile, Message
 from aiogram.utils.markdown import hbold
+from fit_tool.fit_file import FitFile
+from fit_tool.profile.messages.session_message import SessionMessage
 
 from convert_all_tcx import convert_tcx_in_memory
 
@@ -202,6 +206,82 @@ async def handle_tcx_file(
         )
         logger.info(
             f"Invalid TCX file received from user {message.from_user.id}."
+        )
+
+
+@dp.message(F.document.file_name.endswith(".fit"))  # For .fit files
+async def handle_fit_file(
+    message: Message, bot: Bot, state: FSMContext
+) -> None:
+    # Log file details
+    logger.info(
+        f"Received file: {message.document.file_name}, MIME-type: {message.document.mime_type} "
+        f"from user {message.from_user.full_name}, ID={message.from_user.id}"
+    )
+    if message.document.file_size > 50 * 1024 * 1024:  # 50 MB
+        await message.answer(
+            "The file is too large. Please send a smaller file."
+        )
+        return
+
+    data = await state.get_data()
+    g_client = data.get("g_client")
+    if not g_client:
+        g_client = await check_auth(message, bot, state)
+        if not g_client:
+            return
+
+    # Get file details
+    file_id = message.document.file_id
+    file = await bot.get_file(file_id)
+    file_path = file.file_path
+
+    # Download the file into memory
+    downloaded_file = await bot.download_file(file_path)
+    file_content = downloaded_file.read()
+
+    try:
+        # Process the FIT file
+        app_fit = FitFile.from_bytes(file_content)
+        summary = {}
+        for record in app_fit.records:
+            m = record.message
+            if isinstance(m, SessionMessage):
+                summary["activity_datetime"] = datetime.fromtimestamp(
+                    m.start_time / 1000
+                ).strftime("%d %b @ %H:%M UTC")
+                total_seconds_rounded = round(m.total_timer_time)
+                summary["total_time"] = str(
+                    timedelta(seconds=total_seconds_rounded)
+                )
+                distance_km = float(m.total_distance) / 1000
+                summary["total_distance_km"] = f"{distance_km:.2f}"
+                break
+
+        logger.info("FIT processing completed successfully.")
+
+        await message.answer(
+            "Trying to upload to Garmin Connect....\n\n"
+            f"📅 Activity Date & Time: {summary['activity_datetime']}\n"
+            f"⏱ Total Time: {summary['total_time']}\n"
+            f"🛣 Total Distance: {summary['total_distance_km']} km"
+        )
+        try:
+            file_content_io = io.BytesIO(file_content)
+            file_content_io.name = message.document.file_name
+            uploaded = g_client.upload(file_content_io)
+
+            if uploaded:
+                await message.answer(
+                    "File uploaded successfully to Garmin Connect!"
+                )
+        except garth.exc.GarthHTTPError as e:
+            await message.answer("Something is wrong with uploading")
+
+    except Exception as e:
+        logger.error(f"Error during processing FIT-file: {e}")
+        await message.answer(
+            "An error occurred while processing the FIT-file. Please try again or another file."
         )
 
 

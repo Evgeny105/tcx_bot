@@ -1,4 +1,4 @@
-# Telegram Bot for Uploading TCX Files from Kinomap to Garmin Connect
+# Telegram Bot for Uploading TCX and FIT Files from Kinomap to Garmin Connect
 
 This Telegram bot automates the process of converting and uploading TCX files from Kinomap to Garmin Connect. Users can easily send their workout data through the bot, simplifying integration with the Garmin ecosystem.
 
@@ -9,9 +9,10 @@ This Telegram bot automates the process of converting and uploading TCX files fr
 - **Easy Authorization**: During the first use, the bot requests your Garmin Connect login and password. These credentials are used to obtain an access token, which is securely stored for future sessions.
 - **Flexible File Support**: The bot accepts:
   - Single TCX files.
-  - ZIP archives containing multiple TCX files.
+  - ZIP archives containing multiple TCX files (only TCX files are processed; other files are ignored).
+  - FIT files (uploaded directly to Garmin Connect without processing).
 - **Automated Conversion and Upload**: After receiving files, the bot:
-  1. Converts them to the required format.
+  1. Converts them to the required format (for TCX files).
   2. Uploads them to your Garmin Connect account.
   If a workout already exists in Garmin Connect, the bot notifies you and returns the converted TCX files.
 - **User Commands**:
@@ -80,17 +81,17 @@ If you need to rebuild the bot from scratch:
 
 ## Example Workflows
 
-### Sending a Single TCX File
+### Sending a Single TCX or FIT File
 
 1. Open the chat with the bot in Telegram.
-2. Send a TCX file as an attachment.
-3. The bot processes the file and uploads it to Garmin Connect.
+2. Send a TCX or FIT file as an attachment.
+3. The bot processes and uploads the file to Garmin Connect (FIT files are uploaded without conversion).
 
 ### Sending Multiple Files
 
 1. Compress multiple TCX files into a ZIP archive.
 2. Send the ZIP file to the bot.
-3. The bot processes and uploads all files in the archive.
+3. The bot processes and uploads all TCX files in the archive (other file types in the ZIP are ignored).
 
 ---
 
@@ -100,7 +101,7 @@ This project is open-source and available under the MIT License. Contributions a
 
 ---
 
-## Disclaimer
+## Notes from the Author
 
-This project was created as a personal tool over a couple of evenings and is not intended to be a polished or exemplary project. If you have constructive feedback or suggestions, feel free to share—they are much appreciated!
+This bot was created "on the fly" over a couple of evenings for personal use and is not intended as a reference implementation. If you have constructive suggestions (not just criticism), I’d be happy to hear them!
 

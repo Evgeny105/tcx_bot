@@ -19,3 +19,4 @@ garth==0.5.2
 keyring==25.5.0
 keyrings.alt==5.0.2
 python_dateutil==2.9.0
+fit_tool==0.9.13
