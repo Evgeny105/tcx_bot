@@ -1,0 +1,5 @@
+.env
+*.tcx
+*.zip
+__pycache__/*
+*.pyc
